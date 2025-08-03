@@ -24,9 +24,7 @@ class FileInfo:
         if self._checksum is None:
             # Try to get from cache first
             if self._cache:
-                cached_checksum = self._cache.get_checksum(
-                    self.path, self.size, self.modification_time
-                )
+                cached_checksum = self._cache.get_checksum(self.path, self.size, self.modification_time)
                 if cached_checksum:
                     self._checksum = cached_checksum
                     return self._checksum
@@ -36,21 +34,14 @@ class FileInfo:
 
             # Store in cache if available and calculation was successful
             if self._cache and self._checksum:
-                self._cache.store_checksum(
-                    self.path, self.size, self.modification_time, self._checksum
-                )
+                self._cache.store_checksum(self.path, self.size, self.modification_time, self._checksum)
 
         return self._checksum
 
     def _calculate_checksum(self) -> str:
         """Calculate SHA256 checksum of the file using sha256sum."""
         try:
-            result = subprocess.run(
-                ["sha256sum", str(self.path)],
-                capture_output=True,
-                text=True,
-                check=True
-            )
+            result = subprocess.run(["sha256sum", str(self.path)], capture_output=True, text=True, check=True)
             # sha256sum output format: "checksum  filename"
             checksum = result.stdout.split()[0]
             return checksum
@@ -141,6 +132,6 @@ class FileScanner:
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object) -> None:
         """Context manager exit."""
         self.close()

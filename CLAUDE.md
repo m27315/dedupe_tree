@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**dedupe-tree** is a Python CLI tool that finds and removes duplicate files based on SHA256 checksums. It prioritizes keeping files with the shallowest nesting depth (fewest directory levels) and removing more deeply nested duplicates.
+**dedupe-tree** is a Python CLI tool that finds and removes duplicate files and directory trees based on SHA256 checksums. It analyzes both individual files and entire directory structures, prioritizing keeping files/directories with the shallowest nesting depth (fewest directory levels) and removing more deeply nested duplicates.
 
 ## Development Commands
 
@@ -33,9 +33,13 @@ uv pip install -e .
   - `FileInfo`: Represents a file with path, size, depth, and lazy checksum calculation
   - `FileScanner`: Recursively scans directories and groups files by checksum
 
+- **`src/dedupe_tree/directory_scanner.py`** - Directory tree scanning and checksum calculation
+  - `DirectoryInfo`: Represents a directory with path, checksum, size, file count, and depth
+  - `DirectoryScanner`: Recursively scans directory trees and creates hierarchical checksums
+
 - **`src/dedupe_tree/deduplicator.py`** - Duplicate analysis and removal logic
-  - `Deduplicator`: Analyzes duplicate groups and determines which files to keep/remove
-  - Strategy: Keep shallowest file (by path depth), remove deeper nested duplicates
+  - `Deduplicator`: Analyzes duplicate groups and determines which files/directories to keep/remove
+  - Strategy: Keep shallowest files/directories (by path depth), remove deeper nested duplicates
 
 - **`src/dedupe_tree/cli.py`** - Command-line interface using Click and Rich
   - Beautiful terminal output with progress bars and tables
@@ -44,12 +48,14 @@ uv pip install -e .
 
 ### Key Features
 
-- **SHA256-based detection** - Reliable duplicate identification
-- **Depth-based removal** - Keeps files closest to root directory
-- **Safety first** - Dry-run mode by default, requires `--execute` for actual deletion
+- **SHA256-based detection** - Reliable duplicate identification for both files and directory trees
+- **Hierarchical directory fingerprinting** - Creates checksums for entire directory structures
+- **Depth-based removal** - Keeps files/directories closest to root directory
+- **Safety first** - Dry-run mode by default, requires `--delete` for actual deletion
 - **Rich reporting** - Detailed analysis of duplicates and planned actions
 - **Error handling** - Graceful handling of permission errors and inaccessible files
-- **Filtering options** - File extension and minimum size filters
+- **Comprehensive filtering** - File extension, minimum size, and minimum files per directory filters
+- **Performance caching** - SQLite-based caching for faster repeated scans
 
 ## Python Environment
 
@@ -61,20 +67,23 @@ uv pip install -e .
 ## Usage Examples
 
 ```bash
-# Dry run (safe, shows what would be deleted)
+# Dry run (safe, shows what would be deleted) - analyzes both files and directories
 uv run dedupe-tree /home/user/documents
 
 # Execute with confirmation prompt
-uv run dedupe-tree /home/user/documents --execute
-
-# Detailed report of all duplicate groups
-uv run dedupe-tree /home/user/documents --report
+uv run dedupe-tree /home/user/documents --delete
 
 # Filter by file types
 uv run dedupe-tree /home/user/documents --extensions=".jpg,.png,.gif"
 
 # Ignore small files
 uv run dedupe-tree /home/user/documents --min-size=1024
+
+# Only consider directories with at least 5 files
+uv run dedupe-tree /home/user/documents --min-files=5
+
+# Log output to file
+uv run dedupe-tree /home/user/documents --log-file=dedupe.log
 ```
 
 ## Testing Strategy

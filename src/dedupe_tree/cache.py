@@ -27,20 +27,24 @@ class ChecksumCache:
     def _init_database(self) -> None:
         """Initialize the database schema."""
         conn = self._get_connection()
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS file_cache (
                 file_path TEXT PRIMARY KEY,
                 file_size INTEGER NOT NULL,
                 modification_time REAL NOT NULL,
                 checksum TEXT NOT NULL
             )
-        """)
+        """
+        )
 
         # Create index for faster lookups
-        conn.execute("""
+        conn.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_modification_time
             ON file_cache(modification_time)
-        """)
+        """
+        )
         conn.commit()
 
     def _get_connection(self) -> sqlite3.Connection:
@@ -69,7 +73,7 @@ class ChecksumCache:
             SELECT checksum FROM file_cache
             WHERE file_path = ? AND file_size = ? AND modification_time = ?
             """,
-            (str(file_path), file_size, modification_time)
+            (str(file_path), file_size, modification_time),
         )
 
         row = cursor.fetchone()
@@ -92,7 +96,7 @@ class ChecksumCache:
             (file_path, file_size, modification_time, checksum)
             VALUES (?, ?, ?, ?)
             """,
-            (str(file_path), file_size, modification_time, checksum)
+            (str(file_path), file_size, modification_time, checksum),
         )
         conn.commit()
 
@@ -107,13 +111,11 @@ class ChecksumCache:
             Number of entries removed
         """
         import time
+
         cutoff_time = time.time() - (max_age_days * 24 * 60 * 60)
 
         conn = self._get_connection()
-        cursor = conn.execute(
-            "DELETE FROM file_cache WHERE modification_time < ?",
-            (cutoff_time,)
-        )
+        cursor = conn.execute("DELETE FROM file_cache WHERE modification_time < ?", (cutoff_time,))
         conn.commit()
         return cursor.rowcount
 
@@ -127,10 +129,7 @@ class ChecksumCache:
         cursor = conn.execute("SELECT COUNT(DISTINCT checksum) FROM file_cache")
         unique_checksums = cursor.fetchone()[0]
 
-        return {
-            "total_entries": total_entries,
-            "unique_checksums": unique_checksums
-        }
+        return {"total_entries": total_entries, "unique_checksums": unique_checksums}
 
     def clear_cache(self) -> None:
         """Clear all cache entries."""
@@ -148,6 +147,6 @@ class ChecksumCache:
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object) -> None:
         """Context manager exit."""
         self.close()

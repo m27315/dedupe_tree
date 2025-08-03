@@ -162,10 +162,7 @@ def test_groups_sorted_by_space_saved():
         # Group by checksum
         small_checksum = small_files[0].checksum
         large_checksum = large_files[0].checksum
-        duplicate_groups = {
-            small_checksum: small_files,
-            large_checksum: large_files
-        }
+        duplicate_groups = {small_checksum: small_files, large_checksum: large_files}
 
         deduplicator = Deduplicator()
         result = deduplicator.analyze_duplicates(duplicate_groups)
@@ -183,3 +180,73 @@ def test_groups_sorted_by_space_saved():
 
         # The large group should come first
         assert first_group.keep_file.path in {large1, large2}
+
+
+def test_directory_deduplication():
+    """Test directory deduplication functionality."""
+    from dedupe_tree.directory_scanner import DirectoryInfo
+
+    # Create mock directory info objects
+    dir1 = DirectoryInfo(path=Path("/test/documents"), checksum="abc123", size=1000, file_count=5, depth=2)
+
+    dir2 = DirectoryInfo(
+        path=Path("/test/New Folder/documents"), checksum="abc123", size=1000, file_count=5, depth=3  # Should be removed due to "New Folder"
+    )
+
+    dir3 = DirectoryInfo(path=Path("/test/backup/documents"), checksum="abc123", size=1000, file_count=5, depth=3)
+
+    # Group by checksum
+    duplicate_directories = {"abc123": [dir1, dir2, dir3]}
+
+    deduplicator = Deduplicator()
+    result = deduplicator.analyze_duplicates({}, duplicate_directories)
+
+    assert len(result.directory_groups) == 1
+    dir_group = result.directory_groups[0]
+
+    # Should keep the best directory (not in "New Folder", shallowest depth)
+    assert dir_group.keep_directory.path == Path("/test/documents")
+
+    # Should remove the other two
+    remove_paths = {d.path for d in dir_group.remove_directories}
+    assert remove_paths == {Path("/test/New Folder/documents"), Path("/test/backup/documents")}
+
+    assert result.total_directories_to_remove == 2
+
+
+def test_mixed_file_and_directory_deduplication():
+    """Test deduplication with both files and directories."""
+    from dedupe_tree.directory_scanner import DirectoryInfo
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+
+        # Create test files
+        file1 = tmp_path / "file1.txt"
+        file2 = tmp_path / "copy" / "file1.txt"
+        file2.parent.mkdir()
+
+        content = "duplicate content"
+        file1.write_text(content)
+        file2.write_text(content)
+
+        files = [FileInfo(f) for f in [file1, file2]]
+        file_checksum = files[0].checksum
+        duplicate_files = {file_checksum: files}
+
+        # Create mock directories
+        dir1 = DirectoryInfo(path=Path("/test/dir1"), checksum="dir123", size=2000, file_count=10, depth=2)
+
+        dir2 = DirectoryInfo(path=Path("/test/dir2"), checksum="dir123", size=2000, file_count=10, depth=2)
+
+        duplicate_directories = {"dir123": [dir1, dir2]}
+
+        deduplicator = Deduplicator()
+        result = deduplicator.analyze_duplicates(duplicate_files, duplicate_directories)
+
+        # Should have both file and directory duplicates
+        assert len(result.groups) == 1
+        assert len(result.directory_groups) == 1
+
+        assert result.total_files_to_remove == 1
+        assert result.total_directories_to_remove == 1
