@@ -323,21 +323,9 @@ def test_execute_removal_creates_directory_symbolic_links():
         assert dir2.exists() and dir2.is_dir()
 
         # Create mock directory info objects
-        dir_info1 = DirectoryInfo(
-            path=dir1,
-            checksum="same_checksum",
-            size=100,
-            file_count=1,
-            depth=1
-        )
+        dir_info1 = DirectoryInfo(path=dir1, checksum="same_checksum", size=100, file_count=1, depth=1)
 
-        dir_info2 = DirectoryInfo(
-            path=dir2,
-            checksum="same_checksum",
-            size=100,
-            file_count=1,
-            depth=1
-        )
+        dir_info2 = DirectoryInfo(path=dir2, checksum="same_checksum", size=100, file_count=1, depth=1)
 
         duplicate_directories = {"same_checksum": [dir_info1, dir_info2]}
 

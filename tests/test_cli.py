@@ -25,10 +25,7 @@ def test_log_file_functionality():
         file2.write_text(content)
 
         runner = CliRunner()
-        result = runner.invoke(main, [
-            str(tmp_path),
-            "--log-file", str(log_file)
-        ])
+        result = runner.invoke(main, [str(tmp_path), "--log-file", str(log_file)])
 
         # Should complete successfully
         assert result.exit_code == 0
@@ -57,20 +54,10 @@ def test_show_detailed_report_with_log_file():
         file2.write_text("content")
 
         files = [FileInfo(f) for f in [file1, file2]]
-        group = DuplicateGroup(
-            checksum="abc123",
-            keep_file=files[0],
-            remove_files=[files[1]],
-            total_size=sum(f.size for f in files)
-        )
+        group = DuplicateGroup(checksum="abc123", keep_file=files[0], remove_files=[files[1]], total_size=sum(f.size for f in files))
 
         result = DeduplicationResult(
-            groups=[group],
-            directory_groups=[],
-            total_files_to_remove=1,
-            total_directories_to_remove=0,
-            total_space_to_free=files[1].size,
-            errors=[]
+            groups=[group], directory_groups=[], total_files_to_remove=1, total_directories_to_remove=0, total_space_to_free=files[1].size, errors=[]
         )
 
         # Test the function directly to ensure it doesn't crash with log file
@@ -78,7 +65,7 @@ def test_show_detailed_report_with_log_file():
 
         from dedupe_tree.cli import show_detailed_report
 
-        with open(log_file, 'w') as f:
+        with open(log_file, "w") as f:
             log_console = Console(file=f, width=120)
 
             def dual_print(content, **kwargs):
@@ -126,10 +113,7 @@ def test_cli_with_extensions_filter():
         py_file.write_text(content)
 
         runner = CliRunner()
-        result = runner.invoke(main, [
-            str(tmp_path),
-            "--extensions", ".txt"
-        ])
+        result = runner.invoke(main, [str(tmp_path), "--extensions", ".txt"])
 
         assert result.exit_code == 0
         # Should find duplicates among .txt files only
@@ -159,10 +143,7 @@ def test_cli_with_min_size_filter():
         large_file2.write_text(large_content)
 
         runner = CliRunner()
-        result = runner.invoke(main, [
-            str(tmp_path),
-            "--min-size", "1000"  # Only large files should be considered
-        ])
+        result = runner.invoke(main, [str(tmp_path), "--min-size", "1000"])  # Only large files should be considered
 
         assert result.exit_code == 0
         assert "Filtered out" in result.output  # Should mention filtering small files
@@ -202,10 +183,7 @@ def test_cli_symbolic_link_creation():
 
         runner = CliRunner()
         # Use --delete flag and automatically confirm with 'y'
-        result = runner.invoke(main, [
-            str(tmp_path),
-            "--delete"
-        ], input='y\n')
+        result = runner.invoke(main, [str(tmp_path), "--delete"], input="y\n")
 
         # Should complete successfully
         assert result.exit_code == 0
@@ -311,11 +289,7 @@ def test_cli_directory_symbolic_link_creation():
 
         runner = CliRunner()
         # Use --directories and --delete flags and automatically confirm with 'y'
-        result = runner.invoke(main, [
-            str(tmp_path),
-            "--directories",
-            "--delete"
-        ], input='y\n')
+        result = runner.invoke(main, [str(tmp_path), "--directories", "--delete"], input="y\n")
 
         # Should complete successfully
         assert result.exit_code == 0
@@ -330,7 +304,7 @@ def test_cli_directory_symbolic_link_creation():
         # One should be original, one should be a symbolic link
         # Based on the algorithm, copy_dir is kept and original_dir is removed
         assert not dir2.is_symlink()  # copy_dir is kept
-        assert dir1.is_symlink()     # original_dir becomes link
+        assert dir1.is_symlink()  # original_dir becomes link
         assert dir1.resolve() == dir2
 
         # Both should still be accessible with same content
@@ -371,11 +345,7 @@ def test_cli_with_min_dir_size_filter():
         (large_dir2 / "file2.txt").write_text(large_content)
 
         runner = CliRunner()
-        result = runner.invoke(main, [
-            str(tmp_path),
-            "--directories",
-            "--min-dir-size", "1500"  # Only large directories should be considered
-        ])
+        result = runner.invoke(main, [str(tmp_path), "--directories", "--min-dir-size", "1500"])  # Only large directories should be considered
 
         assert result.exit_code == 0
         assert "Filtered out" in result.output  # Should mention filtering small directories
