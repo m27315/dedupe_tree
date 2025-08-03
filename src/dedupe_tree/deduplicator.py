@@ -160,41 +160,47 @@ class Deduplicator:
 
     def execute_removal(self, result: DeduplicationResult, dry_run: bool = True) -> tuple[list[Path], list[Path]]:
         """
-        Execute the actual file and directory removal.
+        Replace duplicate files and directories with symbolic links.
 
         Args:
             result: DeduplicationResult from analyze_duplicates
-            dry_run: If True, don't actually delete files/directories
+            dry_run: If True, don't actually create symbolic links
 
         Returns:
-            Tuple of (removed_files, removed_directories)
+            Tuple of (linked_files, linked_directories)
         """
-        removed_files: list[Path] = []
-        removed_directories: list[Path] = []
+        linked_files: list[Path] = []
+        linked_directories: list[Path] = []
 
-        # Remove duplicate files
+        # Replace duplicate files with symbolic links
         for group in result.groups:
             for file_info in group.remove_files:
                 try:
                     if not dry_run:
+                        # Remove the duplicate file
                         os.remove(file_info.path)
-                    removed_files.append(file_info.path)
+                        # Create symbolic link to the kept file
+                        os.symlink(group.keep_file.path, file_info.path)
+                    linked_files.append(file_info.path)
 
                 except (OSError, PermissionError) as e:
                     self.errors.append((file_info.path, e))
 
-        # Remove duplicate directories
+        # Replace duplicate directories with symbolic links
         for dir_group in result.directory_groups:
             for dir_info in dir_group.remove_directories:
                 try:
                     if not dry_run:
+                        # Remove the duplicate directory
                         shutil.rmtree(dir_info.path)
-                    removed_directories.append(dir_info.path)
+                        # Create symbolic link to the kept directory
+                        os.symlink(dir_group.keep_directory.path, dir_info.path)
+                    linked_directories.append(dir_info.path)
 
                 except (OSError, PermissionError) as e:
                     self.errors.append((dir_info.path, e))
 
-        return removed_files, removed_directories
+        return linked_files, linked_directories
 
     def clear_errors(self) -> None:
         """Clear accumulated errors."""

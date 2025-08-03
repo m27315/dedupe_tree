@@ -250,3 +250,157 @@ def test_mixed_file_and_directory_deduplication():
 
         assert result.total_files_to_remove == 1
         assert result.total_directories_to_remove == 1
+
+
+def test_execute_removal_creates_symbolic_links():
+    """Test that execute_removal creates symbolic links instead of deleting files."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+
+        # Create test files with duplicate content
+        file1 = tmp_path / "file1.txt"
+        file2 = tmp_path / "copy" / "file1.txt"
+        file2.parent.mkdir()
+
+        content = "duplicate content"
+        file1.write_text(content)
+        file2.write_text(content)
+
+        # Verify both files exist and have content
+        assert file1.exists()
+        assert file2.exists()
+        assert file1.read_text() == content
+        assert file2.read_text() == content
+
+        files = [FileInfo(f) for f in [file1, file2]]
+        file_checksum = files[0].checksum
+        duplicate_files = {file_checksum: files}
+
+        deduplicator = Deduplicator()
+        result = deduplicator.analyze_duplicates(duplicate_files)
+
+        # Execute the removal (should create symbolic links)
+        linked_files, linked_directories = deduplicator.execute_removal(result, dry_run=False)
+
+        # Should have linked one file
+        assert len(linked_files) == 1
+        assert len(linked_directories) == 0
+
+        # Both files should still exist
+        assert file1.exists()
+        assert file2.exists()
+
+        # The kept file should still be a regular file
+        assert not file1.is_symlink()
+        assert file1.read_text() == content
+
+        # The removed file should now be a symbolic link pointing to the kept file
+        assert file2.is_symlink()
+        assert file2.resolve() == file1
+        assert file2.read_text() == content  # Should still be readable through the link
+
+
+def test_execute_removal_creates_directory_symbolic_links():
+    """Test that execute_removal creates symbolic links for duplicate directories."""
+    from dedupe_tree.directory_scanner import DirectoryInfo
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+
+        # Create two identical directories
+        dir1 = tmp_path / "original"
+        dir2 = tmp_path / "duplicate"
+
+        dir1.mkdir()
+        dir2.mkdir()
+
+        # Add some files to make them identical
+        (dir1 / "file.txt").write_text("content")
+        (dir2 / "file.txt").write_text("content")
+
+        # Verify both directories exist
+        assert dir1.exists() and dir1.is_dir()
+        assert dir2.exists() and dir2.is_dir()
+
+        # Create mock directory info objects
+        dir_info1 = DirectoryInfo(
+            path=dir1,
+            checksum="same_checksum",
+            size=100,
+            file_count=1,
+            depth=1
+        )
+
+        dir_info2 = DirectoryInfo(
+            path=dir2,
+            checksum="same_checksum",
+            size=100,
+            file_count=1,
+            depth=1
+        )
+
+        duplicate_directories = {"same_checksum": [dir_info1, dir_info2]}
+
+        deduplicator = Deduplicator()
+        result = deduplicator.analyze_duplicates({}, duplicate_directories)
+
+        # Execute the removal (should create symbolic links)
+        linked_files, linked_directories = deduplicator.execute_removal(result, dry_run=False)
+
+        # Should have linked one directory
+        assert len(linked_files) == 0
+        assert len(linked_directories) == 1
+
+        # Both directories should still exist
+        assert dir1.exists()
+        assert dir2.exists()
+
+        # One should be original, one should be a symbolic link
+        # The kept directory (determined by sorting) should be a real directory
+        kept_dir = result.directory_groups[0].keep_directory.path
+        removed_dirs = [d.path for d in result.directory_groups[0].remove_directories]
+
+        # The kept directory should still be a real directory
+        assert not kept_dir.is_symlink()
+        assert kept_dir.is_dir()
+
+        # The removed directory should now be a symbolic link
+        removed_dir = removed_dirs[0]
+        assert removed_dir.is_symlink()
+        assert removed_dir.resolve() == kept_dir
+        # Should still be accessible through the link
+        assert (removed_dir / "file.txt").read_text() == "content"
+
+
+def test_execute_removal_dry_run():
+    """Test that dry run mode doesn't actually create symbolic links."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+
+        # Create test files
+        file1 = tmp_path / "file1.txt"
+        file2 = tmp_path / "file2.txt"
+
+        content = "duplicate content"
+        file1.write_text(content)
+        file2.write_text(content)
+
+        files = [FileInfo(f) for f in [file1, file2]]
+        file_checksum = files[0].checksum
+        duplicate_files = {file_checksum: files}
+
+        deduplicator = Deduplicator()
+        result = deduplicator.analyze_duplicates(duplicate_files)
+
+        # Execute in dry run mode
+        linked_files, linked_directories = deduplicator.execute_removal(result, dry_run=True)
+
+        # Should still report what would be linked
+        assert len(linked_files) == 1
+        assert len(linked_directories) == 0
+
+        # But files should remain unchanged
+        assert file1.exists() and not file1.is_symlink()
+        assert file2.exists() and not file2.is_symlink()
+        assert file1.read_text() == content
+        assert file2.read_text() == content

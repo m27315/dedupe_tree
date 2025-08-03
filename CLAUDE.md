@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**dedupe-tree** is a Python CLI tool that finds and removes duplicate files and directory trees based on SHA256 checksums. It analyzes both individual files and entire directory structures, prioritizing keeping files/directories with the shallowest nesting depth (fewest directory levels) and removing more deeply nested duplicates.
+**dedupe-tree** is a Python CLI tool that finds duplicate files and directory trees, replacing duplicates with symbolic links based on SHA256 checksums. It analyzes both individual files and entire directory structures, prioritizing keeping files/directories with the shallowest nesting depth (fewest directory levels) and replacing more deeply nested duplicates with symbolic links to the kept versions.
 
 ## Development Commands
 
@@ -37,9 +37,9 @@ uv pip install -e .
   - `DirectoryInfo`: Represents a directory with path, checksum, size, file count, and depth
   - `DirectoryScanner`: Recursively scans directory trees and creates hierarchical checksums
 
-- **`src/dedupe_tree/deduplicator.py`** - Duplicate analysis and removal logic
-  - `Deduplicator`: Analyzes duplicate groups and determines which files/directories to keep/remove
-  - Strategy: Keep shallowest files/directories (by path depth), remove deeper nested duplicates
+- **`src/dedupe_tree/deduplicator.py`** - Duplicate analysis and symbolic link creation logic
+  - `Deduplicator`: Analyzes duplicate groups and determines which files/directories to keep/link
+  - Strategy: Keep shallowest files/directories (by path depth), replace deeper nested duplicates with symbolic links
 
 - **`src/dedupe_tree/cli.py`** - Command-line interface using Click and Rich
   - Beautiful terminal output with progress bars and tables
@@ -50,8 +50,8 @@ uv pip install -e .
 
 - **SHA256-based detection** - Reliable duplicate identification for both files and directory trees
 - **Hierarchical directory fingerprinting** - Creates checksums for entire directory structures
-- **Depth-based removal** - Keeps files/directories closest to root directory
-- **Safety first** - Dry-run mode by default, requires `--delete` for actual deletion
+- **Symbolic link replacement** - Keeps files/directories closest to root directory, replaces duplicates with symbolic links
+- **Safety first** - Dry-run mode by default, requires `--delete` to create symbolic links
 - **Rich reporting** - Detailed analysis of duplicates and planned actions
 - **Error handling** - Graceful handling of permission errors and inaccessible files
 - **Comprehensive filtering** - File extension, minimum size, and minimum files per directory filters
@@ -67,10 +67,10 @@ uv pip install -e .
 ## Usage Examples
 
 ```bash
-# Dry run (safe, shows what would be deleted) - analyzes both files and directories
+# Dry run (safe, shows what would be linked) - analyzes both files and directories
 uv run dedupe-tree /home/user/documents
 
-# Execute with confirmation prompt
+# Replace duplicates with symbolic links (with confirmation prompt)
 uv run dedupe-tree /home/user/documents --delete
 
 # Filter by file types
