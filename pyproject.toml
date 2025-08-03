@@ -2,8 +2,9 @@
 name = "dedupe-tree"
 version = "0.1.0"
 description = "Find and remove duplicate files based on SHA256 checksums, prioritizing removal of deeply nested files"
-authors = [{name = "Your Name", email = "your.email@example.com"}]
+authors = [{name = "m27315", email = "m27315@gmail.com"}]
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.1.7",

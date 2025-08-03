@@ -8,7 +8,9 @@
       "Bash(python3 -m pip install:*)",
       "Bash(uv run:*)",
       "Bash(uv add:*)",
-      "Bash(code .)"
+      "Bash(code .)",
+      "Bash(git log:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
