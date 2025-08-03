@@ -39,3 +39,16 @@ uv run ruff check .
 # Type check
 uv run mypy src/
 ```
+
+## Legal Disclaimer
+
+**USE AT YOUR OWN RISK.** This software is provided "as is" without warranty of any kind. The authors and contributors are not responsible for any data loss, corruption, or damage that may result from downloading, installing, or using this tool. 
+
+This tool modifies files and directories on your system by creating symbolic links and potentially removing duplicate files. While it includes safety features like dry-run mode by default, users are strongly advised to:
+
+- Backup important data before using this tool
+- Test the tool on non-critical data first
+- Carefully review the dry-run output before executing actual operations
+- Understand that file operations cannot always be undone
+
+By using this software, you acknowledge and accept full responsibility for any consequences that may arise from its use.
