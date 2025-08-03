@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(uv sync:*)",
+      "Bash(python3 -m pip install:*)",
+      "Bash(uv run:*)",
+      "Bash(uv add:*)",
+      "Bash(code .)"
+    ],
+    "deny": []
+  }
+}
